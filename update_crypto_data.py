@@ -11,7 +11,6 @@ from utils.mongodb import get_latest_timestamp, save_dataframe_to_collection
 # Force reload environment variables
 load_dotenv(override=True)
 API_KEY = os.getenv("CRYPTOCOMPARE_API_KEY")
-MONGO_DB = os.getenv("MONGO_DB")
 
 LIMIT = 2000  # max API hours per call
 
@@ -33,7 +32,7 @@ for coin in COIN_SYMBOLS:
     collection_name = f"{coin}_raw"  # Using {coin}_raw format
     
     # Get last timestamp for this coin
-    last_ts = get_latest_timestamp(MONGO_DB, collection_name)
+    last_ts = get_latest_timestamp(collection_name)
     print(f"Last timestamp for {coin}: {last_ts}")
     START_DATE = last_ts + timedelta(hours=1) if last_ts else datetime(2020, 1, 1)
     END_DATE = datetime.utcnow()

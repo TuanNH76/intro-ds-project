@@ -161,7 +161,7 @@ def process_coin(coin_symbol, update_only=False):
     
     if update_only:
         # Get latest timestamp from the indicators collection
-        latest_timestamp = get_latest_timestamp(None, output_collection_name)
+        latest_timestamp = get_latest_timestamp(output_collection_name)
         
         if latest_timestamp:
             # Add a small buffer to avoid duplicate entries
