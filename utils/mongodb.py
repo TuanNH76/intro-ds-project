@@ -6,16 +6,37 @@ from pymongo import MongoClient
 from datetime import datetime
 import pandas as pd
 
-# Load .env
-load_dotenv()
+def get_mongo_connection():
+    """
+    Creates a new MongoDB connection with freshly loaded environment variables.
+    """
+    # Force reload environment variables
+    load_dotenv(override=True)
+    
+    # Get env vars
+    MONGO_URI = os.getenv("MONGO_URI")
+    MONGO_DB = os.getenv("MONGO_DB")
+    
+    print(f"Connecting to database: {MONGO_DB}")
+    
+    # Connect to MongoDB
+    client = MongoClient(MONGO_URI)
+    db = client[MONGO_DB]
+    
+    return client, db
 
-# Get env vars
-MONGO_URI = os.getenv("MONGO_URI")
-MONGO_DB = os.getenv("MONGO_DB")
+# Initialize connection
+client, db = get_mongo_connection()
 
-# Connect to MongoDB
-client = MongoClient(MONGO_URI)
-db = client[MONGO_DB]
+def refresh_connection():
+    """
+    Refreshes the MongoDB connection with updated environment variables.
+    Call this function after updating your .env file.
+    """
+    global client, db
+    client.close()  # Close existing connection
+    client, db = get_mongo_connection()
+    return "Connection refreshed with updated environment variables."
 
 def get_collection(collection_name):
     """
