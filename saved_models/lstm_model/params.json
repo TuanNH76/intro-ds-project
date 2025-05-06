@@ -1,0 +1,1 @@
+{"hidden_dim": 128, "epochs": 50, "time_steps": 7, "target_horizon": 24, "is_model_created": true, "ohlcv_columns": ["open_price", "high_price", "low_price", "close_price", "volume_to"], "num_output_features": 5}

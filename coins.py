@@ -5,4 +5,4 @@ COIN_SYMBOLS = [
 
 # COIN_SYMBOLS = [
 #     "BTC", "ETH"
-# ]
+
