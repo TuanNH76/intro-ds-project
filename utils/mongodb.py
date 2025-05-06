@@ -6,16 +6,37 @@ from pymongo import MongoClient
 from datetime import datetime
 import pandas as pd
 
-# Load .env
-load_dotenv()
+def get_mongo_connection():
+    """
+    Creates a new MongoDB connection with freshly loaded environment variables.
+    """
+    # Force reload environment variables
+    load_dotenv(override=True)
+    
+    # Get env vars
+    MONGO_URI = os.getenv("MONGO_URI")
+    MONGO_DB = os.getenv("MONGO_DB")
+    
+    print(f"Connecting to database: {MONGO_DB}")
+    
+    # Connect to MongoDB
+    client = MongoClient(MONGO_URI)
+    db = client[MONGO_DB]
+    
+    return client, db
 
-# Get env vars
-MONGO_URI = os.getenv("MONGO_URI")
-MONGO_DB = os.getenv("MONGO_DB")
+# Initialize connection
+client, db = get_mongo_connection()
 
-# Connect to MongoDB
-client = MongoClient(MONGO_URI)
-db = client[MONGO_DB]
+def refresh_connection():
+    """
+    Refreshes the MongoDB connection with updated environment variables.
+    Call this function after updating your .env file.
+    """
+    global client, db
+    client.close()  # Close existing connection
+    client, db = get_mongo_connection()
+    return "Connection refreshed with updated environment variables."
 
 def get_collection(collection_name):
     """
@@ -95,7 +116,7 @@ def get_coin_timeseries(collection_name, coin_symbol, start_time=None, end_time=
 
     return result
 
-def get_latest_timestamp(database_name: str, collection_name: str) -> datetime | None:
+def get_latest_timestamp(collection_name: str) -> datetime | None:
     """
     Get the most recent datetime value from a collection.
 
@@ -106,7 +127,6 @@ def get_latest_timestamp(database_name: str, collection_name: str) -> datetime |
     Returns:
         datetime | None: The latest timestamp found in the collection, or None if empty.
     """
-    db = client[database_name]
     collection = db[collection_name]
     doc = collection.find_one(sort=[("datetime", -1)])
     if doc and "datetime" in doc:

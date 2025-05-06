@@ -1,19 +1,21 @@
 import os
 import time
 import requests
+import pandas as pd
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
 from coins import COIN_SYMBOLS
-from utils.mongodb import insert_many_documents, get_latest_timestamp
+from utils.mongodb import get_latest_timestamp, save_dataframe_to_collection
 
-load_dotenv()
+# Force reload environment variables
+load_dotenv(override=True)
 API_KEY = os.getenv("CRYPTOCOMPARE_API_KEY")
-MONGO_DB = "mydatabase"  # or whatever your database name is
 
 LIMIT = 2000  # max API hours per call
 
 def get_ohlcv(coin, to_ts):
+    """Get OHLCV data from CryptoCompare API"""
     url = "https://min-api.cryptocompare.com/data/v2/histohour"
     params = {
         "fsym": coin,
@@ -27,9 +29,10 @@ def get_ohlcv(coin, to_ts):
 
 # Loop over all coins
 for coin in COIN_SYMBOLS:
-    collection_name = f"raw_{coin}"
+    collection_name = f"{coin}_raw"  # Using {coin}_raw format
+    
     # Get last timestamp for this coin
-    last_ts = get_latest_timestamp(MONGO_DB, collection_name)
+    last_ts = get_latest_timestamp(collection_name)
     print(f"Last timestamp for {coin}: {last_ts}")
     START_DATE = last_ts + timedelta(hours=1) if last_ts else datetime(2020, 1, 1)
     END_DATE = datetime.utcnow()
@@ -49,20 +52,27 @@ for coin in COIN_SYMBOLS:
         print(f"🧩 Chunk {chunk_id + 1}: {chunk_start} → {chunk_end}")
         to_ts = int((chunk_start + timedelta(hours=LIMIT - 1)).timestamp())
         data = get_ohlcv(coin, to_ts)
-        documents = []
-        for entry in data:
-            ts = entry["time"]
-            dt = datetime.utcfromtimestamp(ts)
-            if dt < chunk_start or dt > chunk_end:
-                continue
-
-            entry["coin"] = coin
-            entry["datetime"] = dt
-            entry.pop("_id", None)  # remove _id to avoid dup error
-            documents.append(entry)
         
-        if documents:
-            insert_many_documents(collection_name, documents)
-            print(f"✅ {coin} inserted {len(documents)} docs")
-
+        # Convert to DataFrame
+        if data:
+            df = pd.DataFrame(data)
+            
+            # Convert timestamp to datetime
+            df['datetime'] = df['time'].apply(lambda ts: datetime.utcfromtimestamp(ts))
+            
+            # Filter records within the chunk timeframe
+            df = df[(df['datetime'] >= chunk_start) & (df['datetime'] <= chunk_end)]
+            
+            # Add coin symbol
+            df['coin'] = coin
+            
+            # Drop _id if exists
+            if '_id' in df.columns:
+                df = df.drop(columns=['_id'])
+            
+            # Use save_dataframe_to_collection which handles creating timeseries collection
+            if not df.empty:
+                save_dataframe_to_collection(df, collection_name)
+                print(f"✅ {coin} inserted {len(df)} docs")
+        
         time.sleep(0.2)  # prevent rate limit
