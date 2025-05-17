@@ -1,11 +1,9 @@
 import asyncio
-from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
-from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
-import json
+
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, CrawlerRunConfig
 
 
 async def extract_structured_data_using_css_extractor(url):
-
     browser_config = BrowserConfig(headless=False, java_script_enabled=True)
 
     js_scroll_to_bottom = """
@@ -25,23 +23,22 @@ async def extract_structured_data_using_css_extractor(url):
     crawler_config = CrawlerRunConfig(
         cache_mode=CacheMode.BYPASS,
         scan_full_page=True,
-        # scroll_delay = 3,
-
+        scroll_delay=3,
     )
 
     async with AsyncWebCrawler(config=browser_config) as crawler:
-        result = await crawler.arun(
-            url=url, config=crawler_config
-        )
-        with open("result.txt","w") as f:
+        result = await crawler.arun(url=url, config=crawler_config)
+        with open("result.txt", "w") as f:
             f.write(str(result))
         print(result)
+
 
 async def main(url):
     async with AsyncWebCrawler() as crawler:
         result = await crawler.arun(url)
-        print(result.markdown) 
+        print(result.markdown)
+
+
 if __name__ == "__main__":
     url = "https://cointelegraph.com/"
     asyncio.run(extract_structured_data_using_css_extractor(url))
-
